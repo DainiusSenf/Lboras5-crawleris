@@ -1,17 +1,20 @@
+import com.uwyn.jhighlight.tools.FileUtils;
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
 import edu.uci.ics.crawler4j.fetcher.PageFetcher;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
+import java.io.File;
+
 public class Controller {
     public static void main(String[] args) throws Exception {
         String crawlStorageFolder = "./data";
-        int numberOfCrawlers = 7;
+        int numberOfCrawlers = 1;
 
         CrawlConfig config = new CrawlConfig();
         config.setCrawlStorageFolder(crawlStorageFolder);
-        config.setMaxPagesToFetch(30);
+        config.setMaxPagesToFetch(500);
 
         /*
          * Instantiate the controller for this crawl.
@@ -34,6 +37,15 @@ public class Controller {
          * Start the crawl. This is a blocking operation, meaning that your code
          * will reach the line after this only when crawling is finished.
          */
+        ;
+        purgeDirectory(new File("./data/"));
         controller.start(Crawler.class, numberOfCrawlers);
+    }
+
+    static void purgeDirectory(File dir) {
+        for (File file: dir.listFiles()) {
+            if (file.isDirectory()) purgeDirectory(file);
+            file.delete();
+        }
     }
 }

@@ -23,6 +23,8 @@ public class Crawler extends WebCrawler
     private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|gif|jpg"
             + "|png|mp3|mp3|zip|gz))$");
 
+    private int fileIndex = 1;
+    private int komentFileIndex = 1;
     /**
      * This method receives two parameters. The first parameter is the page
      * in which we have discovered this new url and the second parameter is
@@ -63,63 +65,64 @@ public class Crawler extends WebCrawler
             System.out.println("Number of outgoing links: " + links.size());
 
             try {
-                parseHTML(url);
-
-            }
-            catch (IOException e){
-                e.printStackTrace();
-            }
-
-            try {
+                if(!url.contains("?"))
+                    parseHTML(url);
                 parseComment(url + "?comments");
 
             }
             catch (IOException e){
                 e.printStackTrace();
             }
+//            try {
+//                parseComment(url + "?comments");
+//
+//            }
+//            catch (IOException e){
+//                e.printStackTrace();
+//            }
+
+
+
         }
     }
 
-    private void writeText(String text, String name) throws IOException {
+    private void writeText(String text) throws IOException {
         Writer writer = null;
+        File dir = new File("./data/"+fileIndex+"/");
+        dir.mkdir();
+        String fileName = "./data/"+fileIndex+"/"+fileIndex+".txt";
+        fileIndex++;
+        File yourFile = new File(fileName);
 
-        boolean s = false;
-        int number =1;
-       // while(!s){
+        yourFile.createNewFile();
+        writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(yourFile), "utf-8"));
 
-            String fileName = "./data/"+name+".txt";
-            File yourFile = new File(fileName);
+        writer.write(text);
+        writer.flush();
+        writer.close();
+    }
 
-            if (!yourFile.exists()) {
-                yourFile.createNewFile();
-                writer = new BufferedWriter(new OutputStreamWriter(
-                        new FileOutputStream(yourFile), "utf-8"));
-                writer.write(text);
-                writer.flush();
-                writer.close();
-                s=true;
+    private void writeText(String textToWrite, String fileName) throws IOException {
+        Writer writer = null;
+        File yourFile = new File(fileName);
 
-            }
-     //   }
+        yourFile.createNewFile();
+        writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(yourFile), "utf-8"));
 
-
-
-
+        writer.write(textToWrite);
+        writer.flush();
+        writer.close();
     }
 
     private void parseComment(String url) throws IOException {
 
         Document doc = Jsoup.connect(url).get();
-        String authorName = "";
-        String date = "";
+        komentFileIndex=1;
         /*STRAIPSNIS*/
-        //Tema
-        //Autorius
-//        Element authorDIV = doc.select("div.author-info").first();
-//        if (authorDIV != null) {
-//            authorName = authorDIV.tagName("a.name").text();
-//        }
-
+        Writer writer = null;
+        int fileIndexForComment = fileIndex-1;
         Elements scriptElements = doc.getElementsByTag("script");
         String script="";
         for (Element element :scriptElements ){
@@ -128,53 +131,66 @@ public class Crawler extends WebCrawler
                     script = node.getWholeData();
                     script = script.substring(41);
                     script = script.substring(0,script.length()-1);
-                    System.out.println(script);
                 }
             }
         }
 
 
         JSONObject obj = new JSONObject(script);
-        //String pageName = obj.getJSONObject("comments").getString("pageName");
 
         JSONArray comments = obj.getJSONArray("comments");
         for (int i = 0; i < comments.length(); i++)
         {
+            String commentInfo = "";
             String comment = comments.getJSONObject(i).getString("comment");
+            String user_name = comments.getJSONObject(i).getString("user_name");
+            String user_ip = comments.getJSONObject(i).getString("user_ip");
+            String date = comments.getJSONObject(i).getString("date");
             JSONArray replies = comments.getJSONObject(i).getJSONArray("replies");
-            getReplies(replies);
+            commentInfo =url+"\nNumeris: " + i +
+                    "\nAutorius: " + user_name +
+                    "\nIP: "+ user_ip +
+                    "\nData: " + date +
+                    "\nKomentaras: " + comment+"\n";
+            String fileName = "./data/"+fileIndexForComment+"/"+fileIndexForComment+"koment"+komentFileIndex+".txt";
+            File yourFile = new File(fileName);
+                yourFile.createNewFile();
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(yourFile), "utf-8"));
+            writer.write(commentInfo);
+            writer.flush();
+            writer.close();
+            getReplies(replies,url);
             System.out.println(i + " " +comment);
-            System.out.println("-------------------");
+            komentFileIndex++;
         }
-
-
-        //Pavadinimas
-
-//        String articalName = h1.substring(0, 20) + doc.select("div").attr("data-id");
-//
-//        //Data
-//        Element dateMeta = doc.select("meta[itemprop=datePublished]").first();
-//
-//        if (dateMeta != null) {
-//            ents media = doc.select("[src]");
-//            Elements imports = doc.select("link[href]");*/
-//
-//
-//            if (h1 != null && articalText != null) {//straipsnis
-//                String articleInfo = url + "\n" + "Autorius: " + authorName + "\n" + "Pavadinimas: " +
-//                        h1 + "\n" + "Laikas: " + time + "\n" + "Data: " + date + "\n" + "Straipsnio tekstas: " + articalText + "\n";
-//                writeText(articleInfo, articalName);
-//            }
-//            date = dateMeta.attr("content");
-//        }
     }
-    private void getReplies(JSONArray replies){
 
+    private void getReplies(JSONArray replies, String url) throws IOException {
+        Writer writer = null;
+        int fileIndexForComment = fileIndex-1;
         for (int i = 0; i < replies.length(); i++)
         {
+            komentFileIndex++;
             String comment = replies.getJSONObject(i).getString("comment");
+            String user_name = replies.getJSONObject(i).getString("user_name");
+            String user_ip = replies.getJSONObject(i).getString("user_ip");
+            String date = replies.getJSONObject(i).getString("date");
+            String commentInfo = url+"\nNumeris: " + i +
+                    "\nAutorius: " + user_name +
+                    "\nIP: "+ user_ip +
+                    "\nData: " + date +
+                    "\nKomentaras: " + comment+"\n";
             System.out.println(i + " reply " +comment);
-            System.out.println("-------------------");
+
+            String fileName = "./data/"+fileIndexForComment+"/"+fileIndexForComment+"koment"+komentFileIndex+".txt";
+            File yourFile = new File(fileName);
+                yourFile.createNewFile();
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(yourFile), "utf-8"));
+            writer.write(commentInfo);
+            writer.flush();
+            writer.close();
         }
     }
 
@@ -198,11 +214,23 @@ public class Crawler extends WebCrawler
         String articalName = h1.substring(0,20)+doc.select("div").attr("data-id");
 
         //Data
-        Element dateMeta = doc.select("meta[itemprop=datePublished]").first();
+
+        //get meta description content
+        //String description = doc.select("meta[itemprop=datePublished]").get(0).attr("content");
+        //System.out.println("Meta description : " + description);
+
+        //get meta keyword content
+//        String keywords = doc.select("meta[itemprop=datePublished]").first().attr("content");
+//        System.out.println("Meta keyword : " + keywords);
+
+        Elements dateMeta = doc.select("div.article-info");
 
         if (dateMeta!=null){
             date = dateMeta.attr("content");
         }
+
+        //Tema
+        String temma = doc.select("div.category-path a").last().text();
 
         //Laikas
         String time = doc.select("span.published").text();
@@ -213,64 +241,17 @@ public class Crawler extends WebCrawler
         Elements imports = doc.select("link[href]");*/
 
 
-        if(h1!=null && articalText!=null){//straipsnis
-            String articleInfo = url+"\n"+"Autorius: "+authorName+"\n"+"Pavadinimas: "+
+        if(articalText != null){//straipsnis
+            File dir = new File("./data/"+fileIndex+"/");
+            dir.mkdir();
+            String fileName = "./data/"+fileIndex+"/"+fileIndex+".txt";
+            String articleInfo = url+"\nTema: "+temma+"\nAutorius: "+authorName+"\n"+"Pavadinimas: "+
                     h1+"\n"+"Laikas: "+time+"\n"+"Data: "+date+"\n"+"Straipsnio tekstas: "+articalText+"\n";
-            writeText(articleInfo,articalName);
+            writeText(articleInfo,fileName);
+            fileIndex++;
         }
 
-
-
-
-
-        /*KOMENTARAS*/
-
-//        List<String[]> comments = new ArrayList<String[]>();
-//        Element isComment = doc.select("div.comments-page").first();
-//
-//
-//        if (isComment!=null){//komentaru puslapis
-//
-//            String articleID = doc.select("div").attr("data-id");
-//
-//            Elements commentsDIV= doc.select("div.item.clearfix.main-item");
-//            for (Element div : commentsDIV) {
-//
-//                String[] commentInfo = new String[6];
-//
-//                //Numeris
-//                commentInfo[0] = div.attr("data-item");
-//                //Autorius
-//                commentInfo[1]= doc.select("span.name").text();
-//                //Data
-//                commentInfo[2] = doc.select("span.timestamp").attr("title");
-//                //Laikas
-//                commentInfo[3] = doc.select("span.timestamp").text();
-//                //IP
-//                commentInfo[4] = doc.select("span.name").attr("title");
-//                //Tekstas
-//                commentInfo[5] = doc.select("div.comment").text();
-//
-//                comments.add(commentInfo);
-//
-//            }
-//           for (String[] l:comments){
-//
-//               String commentInfo = "";
-//               for (int i =0;i< l.length;i++){
-//
-//                   commentInfo = url+"\n"+"Autorius: "+l[1]+"\n"+"Numeris: "+
-//                           l[0]+"\n"+"Laikas: "+l[3]+"\n"+"Data: "+l[2]+"\n"+"IP: "+l[4]+"\n"
-//                   +"Komentaro tekstas: "+l[5]+"\n";
-//
-//
-//               }
-//               if (!commentInfo.isEmpty()){
-//                   writeText(commentInfo,"komentaras"+comments.indexOf(l)+"tekstoID:"+articleID);
-//               }
-
-
-           }
+    }
 
 
 
